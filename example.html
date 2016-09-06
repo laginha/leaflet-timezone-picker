@@ -1,0 +1,31 @@
+<html>
+<head>
+  <script src="https://npmcdn.com/leaflet@1.0.0-rc.3/dist/leaflet.js"></script>
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script type="text/javascript" src="jquery.timezone-picker.js"></script>
+
+  <link rel="stylesheet" href="https://npmcdn.com/leaflet@1.0.0-rc.3/dist/leaflet.css" />
+</head>
+<body>
+  <div id="mapid" style="width: 960px; height: 500px;"></div>
+  <script>
+  $(function() {
+    $("#mapid").timezonePicker({
+      maxSelected: 2,
+      onReady: function() {
+        $("#mapid").timezonePicker('selectZone', 'Europe/London');
+      },
+      useLeaflet: true,
+      onHover: null,
+      initialLat: 40,
+      initialLng: -8,
+      initialZoom: 3,
+      mapOptions: {
+        maxZoom: 5,
+        minZoom: 2
+      }
+    });
+  });
+  </script>
+</body>
+</html>
