@@ -11,19 +11,55 @@
   <script>
   $(function() {
     $("#mapid").timezonePicker({
-      maxSelected: 2,
       onReady: function() {
         $("#mapid").timezonePicker('selectZone', 'Europe/London');
       },
-      useLeaflet: true,
-      onHover: null,
-      initialLat: 40,
-      initialLng: -8,
-      initialZoom: 3,
-      mapOptions: {
-        maxZoom: 5,
-        minZoom: 2
-      }
+      // jsonRootUrl: the default root URL for the JSON data files (default '/tz_json/')
+      // hoverRegions: false,
+      // onHover: { //default values
+      //   fillOptions: {
+      //     color: '#888888',
+      //     opacity: 0.5,
+      //   },
+      //   strokeOptions: {
+      //     color: '#444444',
+      //     opacity: 0.7,
+      //     width: 1
+      //   },
+      //   callback: null
+      // },
+      // selectRegions: false,
+      // onSelected: { // default values
+      //   fillOptions: {
+      //     color: '#ffcccc',
+      //     opacity: 0.5,
+      //   },
+      //   strokeOptions: {
+      //     color: '#ff0000',
+      //     width: 1,
+      //     opacity: 0.7
+      //   },
+      //   callback: null  
+      // }
+      // Leaflet options
+      leaflet: {
+        map: {
+          // http://leafletjs.com/reference.html#map-constructor
+          elementId: 'mapid',
+          options: {
+            center: [40, -8], 
+            zoom: 3,
+            minZoom: 3,
+            maxZoom: 3,
+            zoomControl: false,
+            dragging: true,
+          }
+        },
+        tileLayer: {
+          // http://leafletjs.com/reference.html#tilelayer
+          url: 'https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoibGFnaW5oYSIsImEiOiJjaXJ6MG9zd28wMDIzMnlwZGU4OTBsY3l5In0.qe_lgiEahn-i4iOnd3ix3Q',
+        }   
+      }   
     });
   });
   </script>

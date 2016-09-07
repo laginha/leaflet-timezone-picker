@@ -30,33 +30,27 @@
     return [];
   }
   
-  var LeafletMapper = function(el, mouseClickHandler, mouseMoveHandler, mapOptions) {
-    var _map = L.map('mapid',{
-      center: [mapOptions.centerLat, mapOptions.centerLng], 
-      zoom: mapOptions.zoom,
-      zoomControl: false,
-      // dragging: false
-    });
-
-L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoibGFnaW5oYSIsImEiOiJjaXJ6MG9zd28wMDIzMnlwZGU4OTBsY3l5In0.qe_lgiEahn-i4iOnd3ix3Q', {
-        attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-        minZoom: mapOptions.minZoom,
-        maxZoom: mapOptions.maxZoom,
-    }).addTo(_map);
-    _map.on('click', mouseClickHandler);
+  var LeafletMapper = function(el, mouseClickHandler, mouseMoveHandler, options) {
+    var _map = L.map(options.map.elementId, options.map.options);
+    L.tileLayer(options.tileLayer.url, options.tileLayer.options || {}).addTo(_map);
+    if (mouseClickHandler) {
+      _map.on('click', mouseClickHandler);
+    }
     if (mouseMoveHandler) {
       _map.on('mousemove', mouseMoveHandler);
     }
     
     var addPolygon = function(coords, stroke, fill, clickHandler, mouseMoveHandler) {
-      var polygon = L.polygon(coords,{
+      var polygon = L.polygon(coords, {
         color: stroke.color,
         opacity: stroke.opacity,
         weight: stroke.width,
         fillColor: fill.color,
         fillOpacity: fill.opacity
       }).addTo(_map);
-      polygon.on('click', clickHandler);
+      if (clickHandler) {
+        polygon.on('click', clickHandler);
+      }
       if (mouseMoveHandler) {
         polygon.on('mousemove', mouseMoveHandler);
       }
@@ -137,17 +131,14 @@ L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/
           }
           var _result = hitTestAndConvert(_region.hoverRegion, lat, lng);
           $.each(_result.allPolygons, function(i, polygonInfo) {
-            var mapPolygon = _mapper.addPolygon(polygonInfo.coords, {
-              color: '#ff0000',
-              opacity: 0.7,
-              width: 1
-            }, {
-              color: '#ffcccc',
-              opacity: 0.5
-            }, function() {
-              selectPolygonZone(polygonInfo.polygon);
-            }, clearHover);
-
+            var mapPolygon = _mapper.addPolygon(polygonInfo.coords,
+              _options.onSelected.strokeOptions, 
+              _options.onSelected.fillOptions, 
+              function() {
+                selectPolygonZone(polygonInfo.polygon);
+              }, 
+              clearHover
+            );
             _mapZones[name].push(mapPolygon);
           });
           
@@ -323,21 +314,17 @@ L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/
             }
             var _result = hitTestAndConvert(_region.hoverRegion, lat, lng);
             $.each(_result.allPolygons, function(i, polygonInfo) {
-              var mapPolygon = _mapper.addPolygon(polygonInfo.coords, {
-                color: '#444444',
-                opacity: 0.7,
-                width: 1
-              }, {
-                color: '#888888',
-                opacity: 0.5
-              }, mapClickHandler, null);
-
+              var mapPolygon = _mapper.addPolygon(polygonInfo.coords,
+                _options.onHover.strokeOptions, 
+                _options.onHover.fillOptions, 
+                mapClickHandler, null
+              );
               _hoverPolygons.push(mapPolygon);
             });
             
-            if (_options.onHover) {
+            if (_options.onHover.callback) {
               var transition = getCurrentTransition(_region.transitions);
-              _options.onHover(transition[1], transition[2]);
+              _options.onHover.callback(transition[1], transition[2]);
             }
           }
         }
@@ -355,8 +342,8 @@ L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/
     var utcOffset = transition[1];
     var tzName = transition[2];
 
-    if (_options.onSelected) {
-      _options.onSelected(olsonName, utcOffset, tzName);
+    if (_options.onSelected.callback) {
+      _options.onSelected.callback(olsonName, utcOffset, tzName);
     }
     else {
       var pad = function(d) {
@@ -427,32 +414,56 @@ L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/
 
       // Populate the options and set defaults
       _options = options || {};
-      _options.initialZoom = _options.initialZoom || 2;
-      _options.initialLat = _options.initialLat || 0;
-      _options.initialLng = _options.initialLng || 0;
-      _options.strokeColor = _options.strokeColor || '#ff0000';
-      _options.strokeWeight = _options.strokeWeight || 2;
-      _options.strokeOpacity = _options.strokeOpacity || 0.7;
-      _options.fillColor = _options.fillColor || '#ffcccc';
-      _options.fillOpacity = _options.fillOpacity || 0.5;
       _options.jsonRootUrl = _options.jsonRootUrl || 'tz_json/';
       _options.date = _options.date || new Date();
+      
+      var defaultOnHover = {
+        fillOptions: {
+          color: '#888888',
+          opacity: 0.5,
+        },
+        strokeOptions: {
+          color: '#444444',
+          opacity: 0.7,
+          width: 1
+        }
+      };
+      var onHover = _options.onHover || {}
+      _options.onHover = {
+        fillOptions: $.extend( defaultOnHover.fillOptions, onHover.fillOptions || {} ),
+        strokeOptions: $.extend( defaultOnHover.strokeOptions, onHover.strokeOptions || {} ),
+        callback: onHover.callback,
+      }
 
-      _options.mapOptions = $.extend({
-        zoom: _options.initialZoom,
-        centerLat: _options.initialLat,
-        centerLng: _options.initialLng
-      }, _options.mapOptions);
-
+      var defaultOnSelected = {
+        fillOptions: {
+          color: '#ffcccc',
+          opacity: 0.5,
+        },
+        strokeOptions: {
+          color: '#ff0000',
+          width: 1,
+          opacity: 0.7
+        }
+      };
+      var onSelected = _options.onSelected || {}
+      _options.onSelected = {
+        fillOptions: $.extend( defaultOnSelected.fillOptions, onSelected.fillOptions || {} ),
+        strokeOptions: $.extend( defaultOnSelected.strokeOptions, onSelected.strokeOptions || {} ),
+        callback: onSelected.callback,
+      }
+      
       if (typeof _options.hoverRegions === 'undefined') {
         _options.hoverRegions = true;
       }
-      
+      if (typeof _options.selectRegions === 'undefined') {
+        _options.selectRegions = true;
+      }
       
       _mapper = new LeafletMapper(_self.get(0),
-        mapClickHandler,
+        _options.selectRegions ? mapClickHandler : null,
         _options.hoverRegions ? mouseMoveHandler : null,
-        _options.mapOptions
+        _options.leaflet
       );
 
       // Load the necessary data files
@@ -477,15 +488,13 @@ L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/
         checkLoading();
       });
 
-      if (_options.hoverRegions) {
-        $.get(_options.jsonRootUrl + 'hover_regions.json', function(data) {
-          var hoverData = typeof data === 'string' ? JSON.parse(data) : data;
-          $.each(hoverData, function(i, v) {
-            _hoverRegions[v.name] = v;
-          });
-          checkLoading();
+      $.get(_options.jsonRootUrl + 'hover_regions.json', function(data) {
+        var hoverData = typeof data === 'string' ? JSON.parse(data) : data;
+        $.each(hoverData, function(i, v) {
+          _hoverRegions[v.name] = v;
         });
-      }
+        checkLoading();
+      });
     },
     setDate: function(date) {
       hideInfoWindow();
