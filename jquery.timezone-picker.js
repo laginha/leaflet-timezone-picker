@@ -32,6 +32,7 @@
   
   var LeafletMapper = function(el, mouseClickHandler, mouseMoveHandler, options) {
     var _map = L.map(options.map.elementId, options.map.options);
+    
     L.tileLayer(options.tileLayer.url, options.tileLayer.options || {}).addTo(_map);
     if (mouseClickHandler) {
       _map.on('click', mouseClickHandler);
@@ -48,7 +49,7 @@
         fillColor: fill.color,
         fillOpacity: fill.opacity
       }).addTo(_map);
-      if (clickHandler) {
+      if (mouseClickHandler) {
         polygon.on('click', clickHandler);
       }
       if (mouseMoveHandler) {
